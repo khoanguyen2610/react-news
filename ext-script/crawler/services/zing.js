@@ -1,19 +1,10 @@
-//CURL get list category
 var axios = require('axios');
 var cheerio = require('cheerio');
-var firebase = require('firebase');
 
-var app = firebase.initializeApp({ 
-	apiKey: 'AIzaSyDu79SFQzwbQNBJjmJOKpgf_QPzPvhVV90',
-    authDomain: 'react-news-b1841.firebaseapp.com',
-    databaseURL: 'https://react-news-b1841.firebaseio.com',
-    storageBucket: 'react-news-b1841.appspot.com',
-    messagingSenderId: '25837712475'
-});
-
-
+//Define Site Crawl URL
 let siteUrl = 'http://news.zing.vn';
 
+//Define List Category To Get Data
 let arrCategory = ['/kinh-doanh-tai-chinh.html',
 					'/the-gioi.html',
 					'/thoi-su.html',
@@ -21,51 +12,80 @@ let arrCategory = ['/kinh-doanh-tai-chinh.html',
 					'/the-thao.html',
 					];
 
-var userRef = firebase.database().ref('/users/0');
-  userRef.once('value').then(function(snapshot) {
-    var data = snapshot.val();
-   	console.log(data);
-   	app.delete(); // Release resources
-  }).catch(function(error) {
-    console.log('Failed to send notification to user:', error);
-  });
+let ZingService = function () {
+	
+}
 
+//Get Site Url
+ZingService.prototype.getSiteUrl = function () {
+	return siteUrl;
+}
 
-// var defaultStorage = app.storage();
-// var defaultDatabase = app.database();
-// database = firebase.database();
-// // var starCountRef = database.ref('users/ewqdsadwqewqewq');
-// var leadsRef = database.ref('users');
-// leadsRef.on('value', function(snapshot) {
-//     console.log(snapshot);
-// });
+//Get List Category
+ZingService.prototype.getListCategory = function () {
+	return arrCategory;
+}
 
-// //getListArticle
-getListArticle = () => {
-	arrCategory.forEach(function(value) {
-		let url = siteUrl + value;
-		// axios.get(url)
-		// 	  .then(function (response) {
-		// 			getBasicArticle(response.data);
-		// 	  })
-		// 	  .catch(function (error) {
-		// 	    	console.log(error);
-		// 	  });
-	})
+//getListArticle
+ZingService.prototype.getListArticle = function () {
+	let siteUrl = ZingService.prototype.getSiteUrl();
+	let arrCategory = ZingService.prototype.getListCategory();
+	if(arrCategory.length){
+		arrCategory.forEach((value) => {
+			let urlCategory = siteUrl + value;
+			ZingService.prototype.getBasicArticle(urlCategory);
+		})
+	}
 }
 
 //Get Basic Information Of Article Based On List
-getBasicArticle = (html) => {
-	let $ = cheerio.load(html);
+ZingService.prototype.getBasicArticle = function (url) {
+	//HTTP request to get HTML
+	if(url){
+		axios.get(url)
+		  	.then((response) => {
+		  		//Get information basic article
+		  		if(response.status == 200){
+					let $ = cheerio.load(response.data);
 
-	$('section.cate_content article').each(function(index, element){
-		// console.log($(this).html());
-	});
+					//Find element contain article
+					$('section.cate_content article').each((index, element) =>{
+						//Get URL Detail
+						let urlArticle = $(element).find('p.title a').attr('href');
+						//Get Detail Article Based On URL
+						ZingService.prototype.getDetailArticle(urlArticle);
+					});
+		  		}
+		  	})
+		  	.catch((error) => {
+		    	console.log(error);
+		  	});
+	}
+	
 }
 
 
-// //export Module
-module.exports = {
-	getListArticle: getListArticle,
+//Get Basic Information Of Article Based On Url
+ZingService.prototype.getDetailArticle = function (url) {
+	if(url){
+		let siteUrl = ZingService.prototype.getSiteUrl();
+		let urlDetail = siteUrl + url;
+		console.log(urlDetail);
+		//HTTP request to get HTML
+		axios.get(urlDetail)
+		  	.then(function (response) {
+		  		//Get information basic article
+		  		if(response.status == 200){
+					//process data
+					// console.log('get success');
+					// console.log(response.data);
+		  		}
+		  	})
+		  	.catch(function (error) {
+		    	console.log(error);
+		  	});
+	}
 }
 
+//Export Module
+module.exports = ZingService;
